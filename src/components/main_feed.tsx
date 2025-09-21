@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useCallback, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { feed_api } from "@/lib/endpoints";
+import { toi_plus_all_stories_ep, feed_api } from "@/lib/endpoints";
 import { FeedResponse, Section } from "@/models/feed_response";
 import { useFeedStore } from "@/store/useFeedStore";
 import FeedSkeleton from "./feed_skeleton";
@@ -23,44 +23,70 @@ export default function MainFeed() {
     setFitMode,
     setScroll,
   } = useFeedStore();
+
   const [loading, setLoading] = useState(false);
   const observer = useRef<IntersectionObserver | null>(null);
+  const isFetchingRef = useRef(false);
 
+  // --- IntersectionObserver with prefetch buffer ---
   const lastItemRef = useCallback(
     (node: HTMLDivElement | null) => {
       if (observer.current) observer.current.disconnect();
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasMore) {
-          setPage(page + 1);
+
+      observer.current = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          // Trigger fetch when 50% visible and not already fetching
+          if (
+            entry.isIntersecting &&
+            entry.intersectionRatio >= 0.5 &&
+            hasMore &&
+            !loading &&
+            !isFetchingRef.current
+          ) {
+            isFetchingRef.current = true;
+            setPage((prev) => prev + 1);
+          }
+        },
+        {
+          threshold: 0.5, // half visible triggers fetch
         }
-      });
+      );
+
       if (node) observer.current.observe(node);
     },
-    [hasMore, page, setPage]
+    [hasMore, loading, setPage]
   );
 
-  // Restore scroll
+  // --- Restore scroll ---
   useEffect(() => {
     if (scrollY > 0) {
       setTimeout(() => window.scrollTo(0, scrollY), 0);
     }
   }, [scrollY]);
 
-  // Fetch data only if page not cached
+  // --- Fetch current page ---
   useEffect(() => {
     const fetchData = async () => {
-      if (pages[page]) return; // <-- skip network if cached
+      if (pages[page]) {
+        isFetchingRef.current = false;
+        return;
+      }
 
       try {
         setLoading(true);
-        const res = await fetch(`${feed_api}${page}`);
+
+        const toi_feed_url = `${toi_plus_all_stories_ep}&curpg=${page}`;
+        const feed_url = `${feed_api}?url=${encodeURIComponent(toi_feed_url)}`;
+
+        const res = await fetch(feed_url);
         const output = await res.json();
 
         if (!output.success) {
           console.error("Failed to fetch feed:", output.error);
-          setLoading(false);
           return;
         }
+
         const data: FeedResponse = output.data;
         const section = data.sections?.find(
           (s: Section) => s.tn === "sectionlisting"
@@ -76,11 +102,12 @@ export default function MainFeed() {
         console.error("Feed fetch error:", e);
       } finally {
         setLoading(false);
+        isFetchingRef.current = false;
       }
     };
 
     fetchData();
-  }, [addItems, page, pages, setHasMore]);
+  }, [page, pages, addItems, setHasMore]);
 
   const formatDate = (ts?: string) => {
     if (!ts) return "";
@@ -96,88 +123,83 @@ export default function MainFeed() {
 
   return (
     <section className="min-h-screen max-w-4xl mx-auto p-4">
-      {items &&
-        items.length > 0 &&
-        items.map((item, idx) => {
-          const imageUrl = item.image
-            ? `https://static.toiimg.com/thumb/${item.image.id}.cms?width=300&height=200&resizemode=75`
-            : null;
-          const isLast = idx === items.length - 1;
-          const isLoaded = loadedContent[item.id];
+      {items.map((item, idx) => {
+        const imageUrl = item.image
+          ? `https://static.toiimg.com/thumb/${item.image.id}.cms?width=300&height=200&resizemode=75`
+          : null;
+        const isLast = idx === items.length - 1;
+        const isLoaded = loadedContent[item.id];
 
-          return (
-            <Link
-              key={item.id}
-              href={`/story${item.wu?.match(/toi-plus(\/.+)$/)?.[1] ?? ""}`}
-              className="block mb-4 border-b border-b-gray-300 py-4 px-2 hover:bg-gray-100 transition rounded-lg"
-              onClick={() => setScroll(window.scrollY)}
-            >
-              <div ref={isLast ? lastItemRef : null}>
-                <div className="flex flex-col md:flex-row gap-4">
-                  {/* IMAGE */}
-                  <div className="relative w-full md:w-1/3 h-48 md:h-40 flex-shrink-0 bg-gray-100">
-                    {imageUrl ? (
-                      <Image
-                        src={imageUrl}
-                        alt={item.hl || "Story image"}
-                        fill
-                        unoptimized
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        className={`rounded-lg transition-opacity duration-300 ${
-                          isLoaded ? "opacity-100" : "opacity-0"
-                        } ${fitMode[item.id] || "object-cover"}`}
-                        onLoad={(e) => {
-                          setLoaded(item.id);
-                          const img = e.currentTarget as HTMLImageElement;
-                          setFitMode(
-                            item.id,
-                            img.naturalHeight > img.naturalWidth
-                              ? "object-contain"
-                              : "object-cover"
-                          );
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
-                        No Image
-                      </div>
-                    )}
-                  </div>
-
-                  {/* TEXT */}
-                  <div className="flex-1">
-                    <p className="text-xs font-semibold text-red-600 uppercase mb-1">
-                      {item.category?.[0]?.name || "General"}
-                    </p>
-                    <h2 className="text-lg font-bold">
-                      {item.hl || "Untitled"}
-                    </h2>
-                    <p className="text-gray-700 text-sm">
-                      {item.des || "No description available."}
-                    </p>
-                    <div className="mt-3 text-xs text-gray-500 space-x-2">
-                      {item.authors && item.authors?.length > 0 && (
-                        <span>
-                          By{" "}
-                          {item.authors
-                            .map((author) => author.name)
-                            .filter(Boolean)
-                            .join(", ")}
-                        </span>
-                      )}
-                      {item.ag && <span>({item.ag})</span>}
-                      {formatDate(item.upd || item.lpt) && (
-                        <span>• {formatDate(item.upd || item.lpt)}</span>
-                      )}
+        return (
+          <Link
+            key={item.id + "#" + idx}
+            href={`/story${item.wu?.match(/toi-plus(\/.+)$/)?.[1] ?? ""}`}
+            className="block mb-4 border-b border-b-gray-300 py-4 px-2 hover:bg-gray-100 transition rounded-lg"
+            onClick={() => setScroll(window.scrollY)}
+          >
+            <div ref={isLast ? lastItemRef : null}>
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* IMAGE */}
+                <div className="relative w-full md:w-1/3 h-48 md:h-40 flex-shrink-0 bg-gray-100">
+                  {imageUrl ? (
+                    <Image
+                      src={imageUrl}
+                      alt={item.hl || "Story image"}
+                      fill
+                      unoptimized
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className={`rounded-lg transition-opacity duration-300 ${
+                        isLoaded ? "opacity-100" : "opacity-0"
+                      } ${fitMode[item.id] || "object-cover"}`}
+                      onLoad={(e) => {
+                        setLoaded(item.id);
+                        const img = e.currentTarget as HTMLImageElement;
+                        setFitMode(
+                          item.id,
+                          img.naturalHeight > img.naturalWidth
+                            ? "object-contain"
+                            : "object-cover"
+                        );
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+                      No Image
                     </div>
+                  )}
+                </div>
+
+                {/* TEXT */}
+                <div className="flex-1">
+                  <p className="text-xs font-semibold text-red-600 uppercase mb-1">
+                    {item.category?.[0]?.name || "General"}
+                  </p>
+                  <h2 className="text-lg font-bold">{item.hl || "Untitled"}</h2>
+                  <p className="text-gray-700 text-sm">
+                    {item.des || "No description available."}
+                  </p>
+                  <div className="mt-3 text-xs text-gray-500 space-x-2">
+                    {item.authors && item.authors.length > 0 && (
+                      <span>
+                        By{" "}
+                        {item.authors
+                          .map((author) => author.name)
+                          .filter(Boolean)
+                          .join(", ")}
+                      </span>
+                    )}
+                    {item.ag && <span>({item.ag})</span>}
+                    {formatDate(item.upd || item.lpt) && (
+                      <span>• {formatDate(item.upd || item.lpt)}</span>
+                    )}
                   </div>
                 </div>
               </div>
-            </Link>
-          );
-        })}
+            </div>
+          </Link>
+        );
+      })}
       {loading && <FeedSkeleton count={6} />}
-
       {!hasMore && <p className="text-center py-4">No more stories</p>}
     </section>
   );

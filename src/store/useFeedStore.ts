@@ -13,7 +13,7 @@ interface FeedState {
 
   setItems: (items: FeedItem[]) => void;
   addItems: (page: number, newItems: FeedItem[]) => void;
-  setPage: (p: number) => void;
+  setPage: (p: number | ((prev: number) => number)) => void;
   setHasMore: (v: boolean) => void;
   setLoaded: (id: string) => void;
   setFitMode: (id: string, mode: string) => void;
@@ -39,7 +39,10 @@ export const useFeedStore = create<FeedState>((set) => ({
         .flat();
       return { pages, items: merged };
     }),
-  setPage: (p) => set({ page: p }),
+  setPage: (p) =>
+    set((state) => ({
+      page: typeof p === "function" ? p(state.page) : p,
+    })),
   setHasMore: (v) => set({ hasMore: v }),
   setLoaded: (id) =>
     set((s) => ({ loadedContent: { ...s.loadedContent, [id]: true } })),
