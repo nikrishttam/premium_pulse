@@ -6,6 +6,7 @@ import { fetch_story_api, toi_plus_ep } from "@/lib/endpoints";
 import { StoryData } from "@/models/story_data";
 import Image from "next/image";
 import { transform_text } from "@/lib/transform_text";
+import StorySkeleton from "@/components/story_skeleton";
 
 export default function StoryPage() {
   const pathname = usePathname();
@@ -52,7 +53,7 @@ export default function StoryPage() {
         {error_msg ? (
           <div className="text-red-600 text-center mt-8">{error_msg}</div>
         ) : !story_data ? (
-          <div className="text-center mt-8">Loading...</div>
+          <StorySkeleton />
         ) : (
           <>
             <h1 className="text-3xl font-bold mb-4">{story_data.headline}</h1>

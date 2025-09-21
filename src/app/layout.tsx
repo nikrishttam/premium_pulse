@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { description, title } from "@/lib/constants";
-// import Footer from "@/components/footer";
+import Footer from "@/components/footer";
 import Header from "@/components/header";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: title,
@@ -19,8 +20,9 @@ export default function RootLayout({
       <body>
         <Header />
         {children}
-        {/* <Footer /> */}
+        <Footer />
       </body>
+      <Analytics />
     </html>
   );
 }

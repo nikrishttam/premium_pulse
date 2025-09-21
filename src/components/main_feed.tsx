@@ -2,9 +2,10 @@
 import React, { useEffect, useRef, useCallback, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { feeds_ep } from "@/lib/endpoints";
+import { feed_api } from "@/lib/endpoints";
 import { FeedResponse, Section } from "@/models/feed_response";
 import { useFeedStore } from "@/store/useFeedStore";
+import FeedSkeleton from "./feed_skeleton";
 
 export default function MainFeed() {
   const {
@@ -52,9 +53,15 @@ export default function MainFeed() {
 
       try {
         setLoading(true);
-        const res = await fetch(`${feeds_ep}${page}`);
-        const data: FeedResponse = await res.json();
+        const res = await fetch(`${feed_api}${page}`);
+        const output = await res.json();
 
+        if (!output.success) {
+          console.error("Failed to fetch feed:", output.error);
+          setLoading(false);
+          return;
+        }
+        const data: FeedResponse = output.data;
         const section = data.sections?.find(
           (s: Section) => s.tn === "sectionlisting"
         );
@@ -169,7 +176,7 @@ export default function MainFeed() {
             </Link>
           );
         })}
-      {loading && <p className="text-center py-4">Loading... </p>}
+      {loading && <FeedSkeleton count={6} />}
 
       {!hasMore && <p className="text-center py-4">No more stories</p>}
     </section>
