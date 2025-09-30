@@ -2,12 +2,13 @@
 import React, { useEffect, useRef, useCallback, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { toi_plus_all_stories_ep, feed_api } from "@/lib/endpoints";
+import { api_endpoints, toi_plus_all_stories_ep } from "@/lib/endpoints";
 import { FeedResponse, Section } from "@/models/feed_response";
 import { useFeedStore } from "@/store/useFeedStore";
-import FeedSkeleton from "./feed_skeleton";
-
-export default function MainFeed() {
+import FeedSkeleton from "@/components/feed_skeleton";
+import { Publication } from "@/lib/enums";
+import { useRouter } from "next/navigation";
+export default function ToiPlusMainFeed() {
   const {
     items,
     page,
@@ -27,7 +28,7 @@ export default function MainFeed() {
   const [loading, setLoading] = useState(false);
   const observer = useRef<IntersectionObserver | null>(null);
   const isFetchingRef = useRef(false);
-
+  const router = useRouter();
   // --- IntersectionObserver with prefetch buffer ---
   const lastItemRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -77,7 +78,9 @@ export default function MainFeed() {
         setLoading(true);
 
         const toi_feed_url = `${toi_plus_all_stories_ep}&curpg=${page}`;
-        const feed_url = `${feed_api}?url=${encodeURIComponent(toi_feed_url)}`;
+        const feed_url = `${api_endpoints.toi.feed}?url=${encodeURIComponent(
+          toi_feed_url
+        )}`;
 
         const res = await fetch(feed_url);
         const output = await res.json();
@@ -123,6 +126,16 @@ export default function MainFeed() {
 
   return (
     <section className="min-h-screen max-w-4xl mx-auto p-4">
+      {/* Back Button */}
+      <button
+        onClick={() => router.back()}
+        className="mb-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+      >
+        ← Go Back
+      </button>
+      <h2 className="text-3xl font-bold text-center py-4">
+        {Publication.toi_plus}
+      </h2>
       {items.map((item, idx) => {
         const imageUrl = item.image
           ? `https://static.toiimg.com/thumb/${item.image.id}.cms?width=300&height=200&resizemode=75`

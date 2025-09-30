@@ -5,11 +5,12 @@ import { FeedItem } from "@/models/feed_item";
 interface FeedState {
   items: FeedItem[];
   page: number;
-  pages: Record<number, FeedItem[]>; // <-- cache
+  pages: Record<number, FeedItem[]>;
   hasMore: boolean;
   loadedContent: Record<string, boolean>;
   fitMode: Record<string, string>;
   scrollY: number;
+  publication: string; // <-- added
 
   setItems: (items: FeedItem[]) => void;
   addItems: (page: number, newItems: FeedItem[]) => void;
@@ -18,6 +19,7 @@ interface FeedState {
   setLoaded: (id: string) => void;
   setFitMode: (id: string, mode: string) => void;
   setScroll: (y: number) => void;
+  setPublication: (pub: string) => void; // <-- added
   reset: () => void;
 }
 
@@ -29,6 +31,7 @@ export const useFeedStore = create<FeedState>((set) => ({
   loadedContent: {},
   fitMode: {},
   scrollY: 0,
+  publication: "", // <-- initial value
 
   setItems: (items) => set({ items }),
   addItems: (page, newItems) =>
@@ -49,6 +52,7 @@ export const useFeedStore = create<FeedState>((set) => ({
   setFitMode: (id, mode) =>
     set((s) => ({ fitMode: { ...s.fitMode, [id]: mode } })),
   setScroll: (y) => set({ scrollY: y }),
+  setPublication: (pub) => set({ publication: pub }), // <-- added
   reset: () =>
     set({
       items: [],
@@ -58,5 +62,6 @@ export const useFeedStore = create<FeedState>((set) => ({
       loadedContent: {},
       fitMode: {},
       scrollY: 0,
+      publication: "", // <-- reset publication
     }),
 }));

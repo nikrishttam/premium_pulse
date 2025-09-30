@@ -1,3 +1,3 @@
 ## All Free - The Times of India Plus (TOI+) Stories
 
-Get rich insight and analysis stories on Politics, Sports, Business, Education, Environment and more on The Times of India.
+Read all premium articles from The Times of India Plus (TOI+) and The Indian Express Premium for free — no subscription required.

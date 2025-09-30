@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { fetch_story_api, toi_plus_ep } from "@/lib/endpoints";
+import { api_endpoints, toi_plus_ep } from "@/lib/endpoints";
 import { StoryData } from "@/models/story_data";
 import Image from "next/image";
 import { transform_text } from "@/lib/transform_text";
@@ -21,7 +21,7 @@ export default function StoryPage() {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `${fetch_story_api}${encodeURIComponent(externalUrl)}`
+          `${api_endpoints.toi.fetch_story}${encodeURIComponent(externalUrl)}`
         );
         const data = await res.json();
 
