@@ -23,6 +23,7 @@ export async function GET(request: Request) {
     const htmlText = await html_res.text();
     const $ = cheerio.load(htmlText);
     const opinionWrapper = $("#opinion-more-wrapper");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let opinionItems: any[] = [];
     if (opinionWrapper.length) {
       const articles = opinionWrapper.find(".o-opin-article");
