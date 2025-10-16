@@ -36,7 +36,15 @@ export async function GET(request: Request) {
           const para = $article.find(".opinion-news-para").text().trim() || "";
           const author =
             $article.find(".news-writer-name a").text().trim() || "";
-          return { title, date, para, author };
+          const href =
+            $article.find(".opinion-news-figure a").attr("href")?.trim() || "";
+          const idMatch = href.match(/(\d{8})(?:[^\d]*$)/);
+          const id = idMatch ? idMatch[1] : "";
+
+          const img =
+            $article.find(".opinion-news-figure img").attr("src")?.trim() || "";
+
+          return { id, title, date, para, author, img, wu: href };
         })
         .get();
     }

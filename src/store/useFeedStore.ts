@@ -31,7 +31,7 @@ export const useFeedStore = create<FeedState>((set) => ({
   loadedContent: {},
   fitMode: {},
   scrollY: 0,
-  publication: "", // <-- initial value
+  publication: "",
 
   setItems: (items) => set({ items }),
   addItems: (page, newItems) =>
@@ -52,7 +52,7 @@ export const useFeedStore = create<FeedState>((set) => ({
   setFitMode: (id, mode) =>
     set((s) => ({ fitMode: { ...s.fitMode, [id]: mode } })),
   setScroll: (y) => set({ scrollY: y }),
-  setPublication: (pub) => set({ publication: pub }), // <-- added
+  setPublication: (pub) => set({ publication: pub }),
   reset: () =>
     set({
       items: [],
@@ -62,6 +62,6 @@ export const useFeedStore = create<FeedState>((set) => ({
       loadedContent: {},
       fitMode: {},
       scrollY: 0,
-      publication: "", // <-- reset publication
+      publication: "",
     }),
 }));

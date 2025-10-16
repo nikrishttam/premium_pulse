@@ -23,6 +23,7 @@ export default function ToiPlusMainFeed() {
     setLoaded,
     setFitMode,
     setScroll,
+    reset,
   } = useFeedStore();
 
   const [loading, setLoading] = useState(false);
@@ -73,7 +74,6 @@ export default function ToiPlusMainFeed() {
         isFetchingRef.current = false;
         return;
       }
-
       try {
         setLoading(true);
 
@@ -110,7 +110,9 @@ export default function ToiPlusMainFeed() {
     };
 
     fetchData();
-  }, [page, pages, addItems, setHasMore]);
+    // only re-run when page changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const formatDate = (ts?: string) => {
     if (!ts) return "";
@@ -124,6 +126,11 @@ export default function ToiPlusMainFeed() {
     });
   };
 
+  useEffect(() => {
+    return () => {
+      reset();
+    };
+  }, [reset]);
   return (
     <section className="min-h-screen max-w-4xl mx-auto p-4">
       {/* Back Button */}
@@ -146,7 +153,7 @@ export default function ToiPlusMainFeed() {
         return (
           <Link
             key={item.id + "#" + idx}
-            href={`/story${item.wu?.match(/toi-plus(\/.+)$/)?.[1] ?? ""}`}
+            href={`/toi_plus/story${item.wu?.match(/toi-plus(\/.+)$/)?.[1] ?? ""}`}
             className="block mb-4 border-b border-b-gray-300 py-4 px-2 hover:bg-gray-100 transition rounded-lg"
             onClick={() => setScroll(window.scrollY)}
           >

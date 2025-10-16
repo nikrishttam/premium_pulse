@@ -8,7 +8,7 @@ export interface FeedItem {
   category?: { id: number; name: string; url: string; type: string }[];
   authors?: Author[];
   ag?: string;
-  image?: { id: number; version: number };
+  image?: { id: number; version: number; src: string };
   upd?: string;
   lpt?: string;
 }

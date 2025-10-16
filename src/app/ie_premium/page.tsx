@@ -3,11 +3,13 @@ import React, { useEffect, useRef, useCallback, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ie_premium_ep, api_endpoints } from "@/lib/endpoints";
-import { FeedResponse, Section } from "@/models/feed_response";
 import { useFeedStore } from "@/store/useFeedStore";
 import FeedSkeleton from "@/components/feed_skeleton";
 import { Publication } from "@/lib/enums";
 import { useRouter } from "next/navigation";
+import { FeedItem } from "@/models/feed_item";
+import type { Author } from "@/models/author";
+
 export default function IEMainFeed() {
   const {
     items,
@@ -19,10 +21,10 @@ export default function IEMainFeed() {
     scrollY,
     addItems,
     setPage,
-    setHasMore,
     setLoaded,
     setFitMode,
     setScroll,
+    reset,
   } = useFeedStore();
 
   const [loading, setLoading] = useState(false);
@@ -73,7 +75,6 @@ export default function IEMainFeed() {
         isFetchingRef.current = false;
         return;
       }
-
       try {
         setLoading(true);
 
@@ -90,17 +91,31 @@ export default function IEMainFeed() {
           return;
         }
 
-        const data: FeedResponse = output.data;
-        const section = data.sections?.find(
-          (s: Section) => s.tn === "sectionlisting"
+        // Map incoming data to FeedItem[]
+        const all_data: FeedItem[] = (output.data || []).map(
+          (d: {
+            id: string;
+            title: string;
+            date: string;
+            para: string;
+            author: string;
+            img: string;
+            wu: string;
+          }) => ({
+            id: d.id,
+            hl: d.title,
+            des: d.para,
+            wu: d.wu,
+            category: undefined,
+            authors: [{ name: d.author ?? "" } as Author],
+            ag: "",
+            image: { id: 0, version: 0, src: d.img },
+            upd: d.date,
+            lpt: d.date,
+          })
         );
-        const newItems = section?.items ?? [];
-        addItems(page, newItems);
 
-        const pagination = section?.pagination;
-        if (pagination && pagination.cp >= pagination.tp) {
-          setHasMore(false);
-        }
+        addItems(page, all_data);
       } catch (e) {
         console.error("Feed fetch error:", e);
       } finally {
@@ -110,7 +125,9 @@ export default function IEMainFeed() {
     };
 
     fetchData();
-  }, [page, pages, addItems, setHasMore]);
+    // only re-run when page changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const formatDate = (ts?: string) => {
     if (!ts) return "";
@@ -123,7 +140,11 @@ export default function IEMainFeed() {
       year: "numeric",
     });
   };
-
+  useEffect(() => {
+    return () => {
+      reset();
+    };
+  }, [reset]);
   return (
     <section className="min-h-screen max-w-4xl mx-auto p-4">
       {/* Back Button */}
@@ -137,16 +158,16 @@ export default function IEMainFeed() {
         {Publication.ie_premium}
       </h2>
       {items.map((item, idx) => {
-        const imageUrl = item.image
-          ? `https://static.toiimg.com/thumb/${item.image.id}.cms?width=300&height=200&resizemode=75`
-          : null;
+        const imageUrl = item.image ? `${item.image.src}` : null;
         const isLast = idx === items.length - 1;
         const isLoaded = loadedContent[item.id];
 
         return (
           <Link
             key={item.id + "#" + idx}
-            href={`/story${item.wu?.match(/toi-plus(\/.+)$/)?.[1] ?? ""}`}
+            href={`/ie_premium/story${
+              item.wu?.match(/article(\/.+)$/)?.[1] ?? ""
+            }`}
             className="block mb-4 border-b border-b-gray-300 py-4 px-2 hover:bg-gray-100 transition rounded-lg"
             onClick={() => setScroll(window.scrollY)}
           >
