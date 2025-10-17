@@ -129,17 +129,6 @@ export default function IEMainFeed() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
-  const formatDate = (ts?: string) => {
-    if (!ts) return "";
-    const v = Number(ts);
-    if (Number.isNaN(v)) return "";
-    const ms = v < 1e12 ? v * 1000 : v;
-    return new Date(ms).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
   useEffect(() => {
     return () => {
       reset();
@@ -223,8 +212,8 @@ export default function IEMainFeed() {
                       </span>
                     )}
                     {item.ag && <span>({item.ag})</span>}
-                    {formatDate(item.upd || item.lpt) && (
-                      <span>• {formatDate(item.upd || item.lpt)}</span>
+                    {(item.upd || item.lpt) && (
+                      <span>• {item.upd || item.lpt}</span>
                     )}
                   </div>
                 </div>
